@@ -4,7 +4,11 @@ import sqlite3
 from typing import List
 import random
 import string
+from fastapi import Request
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI(title="API des Lobbys")
 app.add_middleware(
@@ -14,6 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="static")
 
 DB = "db.sqlite3"
 
@@ -30,20 +37,58 @@ class ModeDeJeu(BaseModel):
     id: int
     nom: str
 
-# Get a lobby by its code
-@app.get("/lobby/{code}", response_model=Lobby)
-def get_lobby_by_code(code: str):
+#Load the lobby page
+@app.get("/lobby/{code}")
+def lobby_page(request: Request, code: str):
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Lobby WHERE code = ?", (code,))
         row = cursor.fetchone()
         if row:
-            return Lobby(id=row[0], code=row[1], date_creation=row[2], mode_de_jeu_id=row[3])
+            lobby = Lobby(id=row[0], code=row[1], date_creation=row[2], mode_de_jeu_id=row[3])
+            return templates.TemplateResponse("lobby.html", {
+                "request": request,
+                "code": code,
+                "lobby": lobby
+            })
         raise HTTPException(status_code=404, detail="Lobby non trouvé")
+    
+#Load the home page
+@app.get("/")
+def home_page(request: Request):
+    with sqlite3.connect(DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM ModeDeJeu")
+        rows = cursor.fetchall()
+        modes_de_jeu = [ModeDeJeu(id=row[0], nom=row[1]) for row in rows]
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "modes_de_jeu": modes_de_jeu
+    })
+
+#Join a lobby
+@app.put("/lobby")
+def join_lobby(request: Request):
+    form_data = request.form()
+    username = form_data.get("username")
+    code = form_data.get("code")
+
+    if not username or not code:
+        raise HTTPException(status_code=400, detail="Nom d'utilisateur ou code manquant")
+
+    with sqlite3.connect(DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Lobby WHERE code = ?", (code,))
+        lobby = cursor.fetchone()
+        if not lobby:
+            raise HTTPException(status_code=404, detail="Lobby non trouvé")
+    return {"message": f"Utilisateur '{username}' a rejoint le lobby '{code}' avec succès"}
+
 
 # Create a new lobby
 @app.post("/lobby", response_model=Lobby)
 def create_lobby(lobby: LobbyCreate):
+    print("creating lobby")
     with sqlite3.connect(DB) as conn:
         cursor = conn.cursor()
         def generate_unique_code():

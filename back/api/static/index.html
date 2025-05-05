@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jacked Box</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to Jacked Box</h1>
+    </header>
+    <main>
+        <p>Your content goes here.</p>
+    </main>
+    <footer>
+        <p>&copy; 2025 Jacked Box. All rights reserved.</p>
+    </footer>
+        <button id="createLobby" type="submit">Create Lobby</button>
+    <form id="lobbyJoinForm" action="/lobby/join" method="POST">
+        <input type="text" name="username" placeholder="Enter Username" required>
+        <input type="text" name="lobby_id" placeholder="Enter Lobby ID" required>
+        <button type="submit">Join Lobby</button>
+    </form>
+    <script>
+        url = "http://127.0.0.1:8000/lobby";
+        
+        document.getElementById('createLobby').addEventListener('click', function() {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ mode_de_jeu_id: 1 })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Lobby created:', data);
+                window.location.href = `/lobby/${data.code}`; // Redirect to the lobby page
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        document.getElementById('lobbyJoinForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+            
+            const url = this.action; // Get the form action URL
+            const formData = new FormData(this); // Create a FormData object from the form
+
+            fetch(url, {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Lobby joined:', data);
+                
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
