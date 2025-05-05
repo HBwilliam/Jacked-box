@@ -52,7 +52,8 @@ async def interact():
 
             elif choice == "2":
                 lobby_id = input("Lobby ID: ")
-                await websocket.send(json.dumps({"type": "join", "lobby_id": lobby_id}))
+                username = input("Username: ")
+                await websocket.send(json.dumps({"type": "join", "lobby_id": lobby_id, "username": username}))
                 response = await websocket.recv()
                 print("Response:", response)
                 print("You can now send messages. Type /quit to leave.")
