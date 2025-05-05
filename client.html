@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lobby Viewer</title>
+</head>
+<body>
+  <button id="createBtn">Create Lobby</button>
+  <div id="lobbyInfo" style="margin-top: 20px;"></div>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:8765");
+
+    ws.onopen = () => {
+      console.log("Connected");
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data || '{}');
+
+      if (data.type === "status") {
+        const info = data.data;
+        const div = document.getElementById("lobbyInfo");
+        div.innerHTML = `<strong>Lobby Code:</strong> ${info.lobby_id}<br><strong>Players:</strong> ${info.players.join(", ")}`;
+      } else {
+        console.log("Message:", event.data);
+      }
+    };
+
+    document.getElementById("createBtn").onclick = () => {
+      ws.send(JSON.stringify({ type: "create", game_mode: "blackjack" }));
+
+      // Give the server a moment to create and add player
+      setTimeout(() => {
+        ws.send(JSON.stringify({ type: "status" }));
+      }, 200);
+    };
+  </script>
+</body>
+</html>
