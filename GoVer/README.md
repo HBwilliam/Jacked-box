@@ -1,0 +1,1 @@
+`curl -sf https://binaries.nats.dev/nats-io/nats-server/v2@v2.10.20 | sh`
